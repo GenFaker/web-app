@@ -1,0 +1,1812 @@
+{
+  "version": "0.1.0-draft",
+  "review_status": "Draft instrument — AWS expert validation required",
+  "review_metadata": {
+    "status": "unvalidated",
+    "expert_reviewer": null,
+    "reviewed_at": null,
+    "notes": "Derived implementation of capstone scope. The PDF provides a proposed instrument, not a finalized expert-approved rule matrix. All service rules, question phrasing, framework mappings, and sources require qualified AWS expert review."
+  },
+  "categories": [
+    {
+      "id": "storage",
+      "name": "Storage",
+      "subtitle": "Amazon S3",
+      "icon": "archive"
+    },
+    {
+      "id": "database",
+      "name": "Database",
+      "subtitle": "Amazon RDS · DynamoDB",
+      "icon": "database"
+    },
+    {
+      "id": "compute",
+      "name": "Compute",
+      "subtitle": "Amazon EC2 · AWS Lambda",
+      "icon": "cpu"
+    },
+    {
+      "id": "network",
+      "name": "Network",
+      "subtitle": "Route 53 · CloudFront",
+      "icon": "globe"
+    },
+    {
+      "id": "security",
+      "name": "Security",
+      "subtitle": "IAM · ACM · Security Groups",
+      "icon": "shield"
+    }
+  ],
+  "questions": [
+    {
+      "id": "storage_files",
+      "category": "storage",
+      "dimension": "Data Security",
+      "kind": "requirement",
+      "text": "Will the website store or serve files, images, or other objects?",
+      "help": "Select Yes for durable object storage requirements such as images, documents, and downloadable assets."
+    },
+    {
+      "id": "storage_static",
+      "category": "storage",
+      "dimension": "Configuration",
+      "kind": "requirement",
+      "text": "Will the website serve static HTML, CSS, JavaScript, or media assets?",
+      "help": "A static asset requirement can select Amazon S3; a private origin with CloudFront is generally preferable to exposing a bucket."
+    },
+    {
+      "id": "storage_uploads",
+      "category": "storage",
+      "dimension": "Identity and Access Management",
+      "kind": "requirement",
+      "text": "Will users upload files or objects through the website?",
+      "help": "Select Yes when authenticated uploads need object storage and narrowly scoped upload authorization."
+    },
+    {
+      "id": "storage_iam",
+      "category": "storage",
+      "dimension": "Identity and Access Management",
+      "kind": "control",
+      "text": "Are least-privilege roles and restricted bucket or access point policies planned?",
+      "help": "Confirm who can read, write, list, or change S3 access; avoid broad principals and long-lived shared credentials."
+    },
+    {
+      "id": "storage_network",
+      "category": "storage",
+      "dimension": "Network Security",
+      "kind": "control",
+      "text": "Will public bucket access be blocked and object delivery use a deliberately controlled path?",
+      "help": "For public website assets, a private S3 origin with CloudFront Origin Access Control can provide a controlled public delivery path."
+    },
+    {
+      "id": "storage_data",
+      "category": "storage",
+      "dimension": "Data Security",
+      "kind": "control",
+      "text": "Will object classification, encryption, and protection of sensitive uploads be addressed?",
+      "help": "S3 automatically encrypts new uploads, but key policy, classification, transport security, and access boundaries still require review."
+    },
+    {
+      "id": "storage_monitoring",
+      "category": "storage",
+      "dimension": "Monitoring",
+      "kind": "control",
+      "text": "Will appropriate S3 access activity and security-relevant changes be logged and reviewed?",
+      "help": "CloudTrail data events for object access are not enabled by default. Select coverage deliberately and account for logging costs."
+    },
+    {
+      "id": "storage_configuration",
+      "category": "storage",
+      "dimension": "Configuration",
+      "kind": "control",
+      "text": "Will bucket settings, versioning, lifecycle rules, and public access defaults be reviewed?",
+      "help": "Confirm the intended storage design and test permissions before deployment; select retention and recovery settings deliberately."
+    },
+    {
+      "id": "database_relational",
+      "category": "database",
+      "dimension": "Configuration",
+      "kind": "requirement",
+      "text": "Does the application require relational tables or SQL queries?",
+      "help": "Select Yes for a relational data model or relational SQL requirement. Transactions alone do not distinguish RDS from DynamoDB, which also supports transactions."
+    },
+    {
+      "id": "database_keyvalue",
+      "category": "database",
+      "dimension": "Configuration",
+      "kind": "requirement",
+      "text": "Does the application need a key-value or document data store with defined access patterns?",
+      "help": "Select Yes for a NoSQL data requirement that can fit DynamoDB. Both database choices can apply to different parts of a website."
+    },
+    {
+      "id": "database_iam",
+      "category": "database",
+      "dimension": "Identity and Access Management",
+      "kind": "control",
+      "text": "Are distinct, least-privilege database administrators and application identities planned?",
+      "help": "Use service-appropriate identities: database credentials or supported IAM authentication for RDS, and IAM authorization for DynamoDB."
+    },
+    {
+      "id": "database_network",
+      "category": "database",
+      "dimension": "Network Security",
+      "kind": "control",
+      "text": "Will database network access be restricted to the intended applications?",
+      "help": "For RDS, avoid public accessibility and broad ingress. For DynamoDB, review endpoint policies and the need for VPC endpoints."
+    },
+    {
+      "id": "database_data",
+      "category": "database",
+      "dimension": "Data Security",
+      "kind": "control",
+      "text": "Are encryption, secure client connections, and data recovery protections planned?",
+      "help": "Confirm database-specific encryption and key access, TLS connections, backups, and tested restoration against stated needs."
+    },
+    {
+      "id": "database_monitoring",
+      "category": "database",
+      "dimension": "Monitoring",
+      "kind": "control",
+      "text": "Will database administrative activity, access indicators, and failures be logged and reviewed?",
+      "help": "Choose appropriate service logs and CloudTrail event coverage; logging requirements vary between RDS and DynamoDB."
+    },
+    {
+      "id": "database_configuration",
+      "category": "database",
+      "dimension": "Configuration",
+      "kind": "control",
+      "text": "Will the database model, access patterns, backup settings, and capacity configuration be reviewed?",
+      "help": "Validate relational versus NoSQL suitability; different data stores may both be needed for different application components."
+    },
+    {
+      "id": "compute_os",
+      "category": "compute",
+      "dimension": "Configuration",
+      "kind": "requirement",
+      "text": "Does the application require control of a server operating system or VM?",
+      "help": "Select Yes for custom OS packages, persistent server processes, or a workload requiring a virtual machine."
+    },
+    {
+      "id": "compute_events",
+      "category": "compute",
+      "dimension": "Configuration",
+      "kind": "requirement",
+      "text": "Can the application run as event-driven functions within Lambda limits?",
+      "help": "Select Yes for request or event handlers suited to AWS Lambda. Confirm current duration, memory, packaging, and integration limits."
+    },
+    {
+      "id": "compute_long_running",
+      "category": "compute",
+      "dimension": "Configuration",
+      "kind": "requirement",
+      "text": "Will the application run continuously or require jobs beyond Lambda execution limits?",
+      "help": "Select Yes for a long-running workload requiring EC2 among the covered services. Capacity and resilience require additional design."
+    },
+    {
+      "id": "compute_iam",
+      "category": "compute",
+      "dimension": "Identity and Access Management",
+      "kind": "control",
+      "text": "Will compute use narrowly scoped execution roles rather than embedded access keys?",
+      "help": "Review EC2 instance profiles or Lambda execution roles and the permissions used by deployment automation."
+    },
+    {
+      "id": "compute_network",
+      "category": "compute",
+      "dimension": "Network Security",
+      "kind": "control",
+      "text": "Will public exposure and compute network paths be explicitly restricted?",
+      "help": "Review EC2 security groups and subnet placement; for Lambda distinguish function invocation policies from VPC interface traffic."
+    },
+    {
+      "id": "compute_data",
+      "category": "compute",
+      "dimension": "Data Security",
+      "kind": "control",
+      "text": "Will application secrets, storage encryption, and sensitive runtime data be protected?",
+      "help": "Avoid plaintext credentials in code or deployment files. Use a suitable secrets service and review encryption key permissions."
+    },
+    {
+      "id": "compute_monitoring",
+      "category": "compute",
+      "dimension": "Monitoring",
+      "kind": "control",
+      "text": "Will application logs, infrastructure events, and failure alerts be configured and reviewed?",
+      "help": "Define useful log content and retention; avoid writing sensitive values or credentials into logs."
+    },
+    {
+      "id": "compute_configuration",
+      "category": "compute",
+      "dimension": "Configuration",
+      "kind": "control",
+      "text": "Will runtime limits, secure defaults, patching responsibilities, and deployment settings be reviewed?",
+      "help": "For EC2 review images, updates, and metadata settings. For Lambda review runtime support, resource limits, and invocation permissions."
+    },
+    {
+      "id": "network_domain",
+      "category": "network",
+      "dimension": "Network Security",
+      "kind": "requirement",
+      "text": "Will you manage the website’s public domain and DNS records on AWS?",
+      "help": "Select Yes for Route 53 authoritative DNS management. An existing external DNS provider can remain in use when No is selected."
+    },
+    {
+      "id": "network_delivery",
+      "category": "network",
+      "dimension": "Network Security",
+      "kind": "requirement",
+      "text": "Will the website use a content delivery network or a controlled public edge?",
+      "help": "Select Yes for CloudFront distribution, caching, HTTPS delivery, or a private S3 origin behind a public edge."
+    },
+    {
+      "id": "network_global_delivery",
+      "category": "network",
+      "dimension": "Configuration",
+      "kind": "requirement",
+      "text": "Does the website need edge caching for visitors in multiple regions?",
+      "help": "Select Yes for a CloudFront global delivery requirement. This does not select multi-region compute or database deployment."
+    },
+    {
+      "id": "network_iam",
+      "category": "network",
+      "dimension": "Identity and Access Management",
+      "kind": "control",
+      "text": "Will DNS and distribution changes be limited to authorized administrators?",
+      "help": "Restrict permissions for Route 53 zones, DNS records, CloudFront distributions, and related certificate configuration."
+    },
+    {
+      "id": "network_network",
+      "category": "network",
+      "dimension": "Network Security",
+      "kind": "control",
+      "text": "Will origins, DNS targets, and public delivery routes have defined exposure boundaries?",
+      "help": "Restrict direct origin access where possible and verify that DNS records target resources controlled by the organization."
+    },
+    {
+      "id": "network_data",
+      "category": "network",
+      "dimension": "Data Security",
+      "kind": "control",
+      "text": "Will HTTPS and appropriate protection of sensitive cached or DNS-related data be planned?",
+      "help": "Enforce suitable viewer and origin TLS policies for CloudFront. Review DNSSEC for DNS integrity and avoid secrets in DNS records."
+    },
+    {
+      "id": "network_monitoring",
+      "category": "network",
+      "dimension": "Monitoring",
+      "kind": "control",
+      "text": "Will DNS or edge activity and configuration changes have appropriate logging and review?",
+      "help": "Choose relevant query, access, and control-plane logs. Plan retention, access restrictions, and alerting for important changes."
+    },
+    {
+      "id": "network_configuration",
+      "category": "network",
+      "dimension": "Configuration",
+      "kind": "control",
+      "text": "Will DNS records, cache behaviors, domain ownership, and retired targets be reviewed?",
+      "help": "Check record targets and aliases, cache keys, certificate region requirements, and removal of stale DNS after decommissioning."
+    },
+    {
+      "id": "security_access",
+      "category": "security",
+      "dimension": "Identity and Access Management",
+      "kind": "requirement",
+      "text": "Will people or application workloads need identities or permissions for AWS resources?",
+      "help": "IAM is also included as a dependency whenever another covered AWS service is identified. Prefer federation and short-lived roles."
+    },
+    {
+      "id": "security_tls",
+      "category": "security",
+      "dimension": "Data Security",
+      "kind": "requirement",
+      "text": "Will you manage an HTTPS certificate for an AWS-supported endpoint?",
+      "help": "Select Yes for ACM certificate management on an integrated endpoint, such as a custom domain on CloudFront. ACM is not a general-purpose TLS proxy."
+    },
+    {
+      "id": "security_private_ingress",
+      "category": "security",
+      "dimension": "Network Security",
+      "kind": "requirement",
+      "text": "Will a VPC-attached workload require a controlled inbound or outbound network boundary?",
+      "help": "Select Yes for Security Groups on EC2, RDS, or a VPC-attached Lambda interface. Lambda without VPC attachment does not automatically need a Security Group."
+    },
+    {
+      "id": "security_iam",
+      "category": "security",
+      "dimension": "Identity and Access Management",
+      "kind": "control",
+      "text": "Are federation or least-privilege identities, MFA for human access, and protected administrator credentials planned?",
+      "help": "Prefer short-lived credentials, protect the root user, and regularly review roles, trust policies, and any unavoidable access keys."
+    },
+    {
+      "id": "security_network",
+      "category": "security",
+      "dimension": "Network Security",
+      "kind": "control",
+      "text": "Will security boundaries and trusted administrative or service access paths be restricted?",
+      "help": "Review security group sources and destinations and relevant IAM or certificate access paths. Avoid unnecessary administrative exposure."
+    },
+    {
+      "id": "security_data",
+      "category": "security",
+      "dimension": "Data Security",
+      "kind": "control",
+      "text": "Will certificates, credentials, and encryption key access be protected?",
+      "help": "Use managed certificate renewal where supported, avoid embedding secrets, and restrict access to certificate material and credentials."
+    },
+    {
+      "id": "security_monitoring",
+      "category": "security",
+      "dimension": "Monitoring",
+      "kind": "control",
+      "text": "Will security-relevant identity, certificate, and boundary changes be logged and reviewed?",
+      "help": "Enable appropriate CloudTrail coverage and consider alerts for privilege changes, certificate failures, and broad ingress changes."
+    },
+    {
+      "id": "security_configuration",
+      "category": "security",
+      "dimension": "Configuration",
+      "kind": "control",
+      "text": "Will role policies, certificate lifecycle, and security group rules be reviewed before deployment?",
+      "help": "Validate IAM trust and permission policies, ACM validation and renewal prerequisites, and removal of unused security group rules."
+    }
+  ],
+  "services": {
+    "s3": {
+      "name": "Amazon S3",
+      "category": "storage",
+      "any_yes": [
+        "storage_files",
+        "storage_static",
+        "storage_uploads"
+      ],
+      "reason": "Amazon S3 provides durable object storage for the stated static asset, file storage, or upload requirement.",
+      "risks": [
+        {
+          "id": "s3_1",
+          "dimension": "Identity and Access Management",
+          "title": "Excessive object or bucket permissions",
+          "description": "Broad IAM or bucket policies can allow unintended object reads, writes, deletion, or policy changes.",
+          "action": "Use least-privilege roles and bucket policies, restrict principals and prefixes, and review cross-account access.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC03 — Permissions management",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/permissions-management.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Identity and access management (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.AA — Identity Management, Authentication, and Access Control",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/security-best-practices.html",
+          "source_question_id": "storage_iam"
+        },
+        {
+          "id": "s3_2",
+          "dimension": "Network Security",
+          "title": "Unintended public bucket exposure",
+          "description": "Public bucket or access point permissions can bypass the intended website delivery boundary.",
+          "action": "Enable S3 Block Public Access where applicable and use CloudFront Origin Access Control for a private S3 origin.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC05 — Network protection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/network-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Network access controls (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.IR — Technology Infrastructure Resilience",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html",
+          "source_question_id": "storage_network"
+        },
+        {
+          "id": "s3_3",
+          "dimension": "Data Security",
+          "title": "Inadequate data and key protection",
+          "description": "Default object encryption alone does not establish correct key permissions, data classification, or protection of sensitive uploads.",
+          "action": "Classify stored data, require secure transport, review encryption and key policy, and restrict sensitive object access.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC08 / SEC09 — Protecting data at rest and in transit",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/data-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Data protection and encryption (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.DS — Data Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingEncryption.html",
+          "source_question_id": "storage_data"
+        },
+        {
+          "id": "s3_4",
+          "dimension": "Monitoring",
+          "title": "Missing object access visibility",
+          "description": "Unselected object-level audit coverage can leave reads or writes unavailable for investigation.",
+          "action": "Select appropriate CloudTrail S3 data events, protect audit logs, and define review and retention procedures.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC04 — Detection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/detection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Logging and monitoring (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "DE.CM — Continuous Monitoring",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/cloudtrail-logging-s3-info.html",
+          "source_question_id": "storage_monitoring"
+        },
+        {
+          "id": "s3_5",
+          "dimension": "Configuration",
+          "title": "Unreviewed bucket recovery and lifecycle settings",
+          "description": "Inappropriate versioning, lifecycle, or bucket settings can expose or unintentionally delete website data.",
+          "action": "Review public access defaults, enable appropriate versioning, and test lifecycle and recovery settings before deployment.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC01 — Secure operation and configuration",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/operate-your-workload-securely.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Secure configuration and review (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.PS — Platform Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html",
+          "source_question_id": "storage_configuration"
+        }
+      ]
+    },
+    "rds": {
+      "name": "Amazon RDS",
+      "category": "database",
+      "any_yes": [
+        "database_relational"
+      ],
+      "reason": "Amazon RDS fits the stated need for a managed relational database with relational tables or SQL queries.",
+      "risks": [
+        {
+          "id": "rds_1",
+          "dimension": "Identity and Access Management",
+          "title": "Overprivileged database identities",
+          "description": "Shared administrator credentials or broad IAM permissions can grant unnecessary database control.",
+          "action": "Use separate administrative and application identities, least-privilege grants, and supported IAM authentication where appropriate.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC03 — Permissions management",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/permissions-management.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Identity and access management (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.AA — Identity Management, Authentication, and Access Control",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAM.html",
+          "source_question_id": "database_iam"
+        },
+        {
+          "id": "rds_2",
+          "dimension": "Network Security",
+          "title": "Publicly accessible database instance",
+          "description": "Public accessibility and broad security group ingress can expose the database to unintended clients.",
+          "action": "Use private subnets where appropriate, review Publicly accessible, and restrict security group ingress to intended application identities or sources.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC05 — Network protection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/network-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Network access controls (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.IR — Technology Infrastructure Resilience",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.RDSSecurityGroups.html",
+          "source_question_id": "database_network"
+        },
+        {
+          "id": "rds_3",
+          "dimension": "Data Security",
+          "title": "Unprotected database data or connections",
+          "description": "Unreviewed storage encryption, TLS requirements, or backup protection can expose database content.",
+          "action": "Enable appropriate RDS encryption, require supported TLS client connections, protect key access, and define tested backups.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC08 / SEC09 — Protecting data at rest and in transit",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/data-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Data protection and encryption (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.DS — Data Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html",
+          "source_question_id": "database_data"
+        },
+        {
+          "id": "rds_4",
+          "dimension": "Monitoring",
+          "title": "Insufficient database audit trails",
+          "description": "Missing engine logs or administrative event coverage can prevent investigation of database misuse.",
+          "action": "Enable appropriate database logs and CloudTrail administrative coverage, review access indicators, and set retention.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC04 — Detection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/detection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Logging and monitoring (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "DE.CM — Continuous Monitoring",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_LogAccess.html",
+          "source_question_id": "database_monitoring"
+        },
+        {
+          "id": "rds_5",
+          "dimension": "Configuration",
+          "title": "Unsuitable database or recovery settings",
+          "description": "An unreviewed engine, parameter group, backup, or capacity setting can undermine the stated relational workload.",
+          "action": "Validate engine and SQL requirements, review parameter groups and patch settings, and test backup restoration.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC01 — Secure operation and configuration",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/operate-your-workload-securely.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Secure configuration and review (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.PS — Platform Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_BestPractices.html",
+          "source_question_id": "database_configuration"
+        }
+      ]
+    },
+    "dynamodb": {
+      "name": "Amazon DynamoDB",
+      "category": "database",
+      "any_yes": [
+        "database_keyvalue"
+      ],
+      "reason": "Amazon DynamoDB fits the stated key-value or document data requirement with defined access patterns.",
+      "risks": [
+        {
+          "id": "dynamodb_1",
+          "dimension": "Identity and Access Management",
+          "title": "Overbroad table and API permissions",
+          "description": "Wildcard DynamoDB permissions can expose table data or administrative operations beyond application needs.",
+          "action": "Restrict IAM actions and table or index resources, use workload roles, and consider fine-grained access conditions.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC03 — Permissions management",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/permissions-management.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Identity and access management (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.AA — Identity Management, Authentication, and Access Control",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/security-iam.html",
+          "source_question_id": "database_iam"
+        },
+        {
+          "id": "dynamodb_2",
+          "dimension": "Network Security",
+          "title": "Unrestricted DynamoDB access paths",
+          "description": "An unrestricted endpoint or identity policy can permit table operations outside the intended network context.",
+          "action": "Review IAM conditions and endpoint policies; use a DynamoDB VPC endpoint when required by the access design.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC05 — Network protection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/network-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Network access controls (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.IR — Technology Infrastructure Resilience",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/vpc-endpoints-dynamodb.html",
+          "source_question_id": "database_network"
+        },
+        {
+          "id": "dynamodb_3",
+          "dimension": "Data Security",
+          "title": "Unreviewed encryption and recovery protection",
+          "description": "Inappropriate key permissions, client security, or recovery settings can expose data or hinder restoration.",
+          "action": "Review encryption key ownership and permissions, require TLS, and enable point-in-time recovery when needed.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC08 / SEC09 — Protecting data at rest and in transit",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/data-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Data protection and encryption (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.DS — Data Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/EncryptionAtRest.html",
+          "source_question_id": "database_data"
+        },
+        {
+          "id": "dynamodb_4",
+          "dimension": "Monitoring",
+          "title": "Missing table-level audit coverage",
+          "description": "Without appropriate CloudTrail event selection, table data activity may not be available for review.",
+          "action": "Configure the required DynamoDB CloudTrail event coverage and protect and review resulting logs.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC04 — Detection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/detection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Logging and monitoring (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "DE.CM — Continuous Monitoring",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/logging-using-cloudtrail.html",
+          "source_question_id": "database_monitoring"
+        },
+        {
+          "id": "dynamodb_5",
+          "dimension": "Configuration",
+          "title": "Inappropriate key design or capacity configuration",
+          "description": "A NoSQL design without validated access patterns can cause unsuitable permissions, inefficient access, or operational failure.",
+          "action": "Validate partition and sort keys against access patterns, review indexes and capacity, and test recovery settings.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC01 — Secure operation and configuration",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/operate-your-workload-securely.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Secure configuration and review (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.PS — Platform Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/best-practices.html",
+          "source_question_id": "database_configuration"
+        }
+      ]
+    },
+    "ec2": {
+      "name": "Amazon EC2",
+      "category": "compute",
+      "any_yes": [
+        "compute_os",
+        "compute_long_running"
+      ],
+      "reason": "Amazon EC2 fits the stated need for operating-system control, persistent server processes, or a workload beyond Lambda execution limits.",
+      "risks": [
+        {
+          "id": "ec2_1",
+          "dimension": "Identity and Access Management",
+          "title": "Embedded keys or excessive instance permissions",
+          "description": "Long-lived credentials or an overprivileged instance profile can expose AWS resources after workload compromise.",
+          "action": "Use a least-privilege EC2 instance profile and temporary role credentials; remove embedded access keys.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC03 — Permissions management",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/permissions-management.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Identity and access management (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.AA — Identity Management, Authentication, and Access Control",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html",
+          "source_question_id": "compute_iam"
+        },
+        {
+          "id": "ec2_2",
+          "dimension": "Network Security",
+          "title": "Unnecessary public or administrative ingress",
+          "description": "Broad security group rules and public placement can expose instance management and application ports.",
+          "action": "Restrict inbound and outbound rules to required sources and ports and review private subnet or managed access options.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC05 — Network protection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/network-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Network access controls (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.IR — Technology Infrastructure Resilience",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-security-groups.html",
+          "source_question_id": "compute_network"
+        },
+        {
+          "id": "ec2_3",
+          "dimension": "Data Security",
+          "title": "Exposed secrets or unencrypted volumes",
+          "description": "Plaintext secrets and unreviewed EBS encryption or key permissions can expose application data.",
+          "action": "Use a suitable secrets-management mechanism, encrypt appropriate EBS volumes, and restrict encryption key permissions.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC08 / SEC09 — Protecting data at rest and in transit",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/data-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Data protection and encryption (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.DS — Data Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html",
+          "source_question_id": "compute_data"
+        },
+        {
+          "id": "ec2_4",
+          "dimension": "Monitoring",
+          "title": "Missing workload or instance telemetry",
+          "description": "Uncollected application and operating-system events can conceal failures or suspicious activity.",
+          "action": "Collect appropriate application and OS logs, review CloudTrail management events, and configure actionable alerts and retention.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC04 — Detection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/detection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Logging and monitoring (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "DE.CM — Continuous Monitoring",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring_ec2.html",
+          "source_question_id": "compute_monitoring"
+        },
+        {
+          "id": "ec2_5",
+          "dimension": "Configuration",
+          "title": "Insecure instance defaults or outdated images",
+          "description": "Unpatched images, weak metadata settings, or unsuitable instance configuration can increase attack exposure.",
+          "action": "Use reviewed images, establish patching, require IMDSv2 where appropriate, and review launch and recovery configuration.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC01 — Secure operation and configuration",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/operate-your-workload-securely.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Secure configuration and review (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.PS — Platform Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html",
+          "source_question_id": "compute_configuration"
+        }
+      ]
+    },
+    "lambda": {
+      "name": "AWS Lambda",
+      "category": "compute",
+      "any_yes": [
+        "compute_events"
+      ],
+      "reason": "AWS Lambda fits the stated event-driven function requirement, subject to current service execution and integration limits.",
+      "risks": [
+        {
+          "id": "lambda_1",
+          "dimension": "Identity and Access Management",
+          "title": "Overprivileged execution or invocation policies",
+          "description": "Broad execution roles or resource-based invocation policies can grant unintended function or downstream access.",
+          "action": "Use a dedicated least-privilege execution role and restrict function invocation permissions to trusted principals and sources.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC03 — Permissions management",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/permissions-management.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Identity and access management (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.AA — Identity Management, Authentication, and Access Control",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html",
+          "source_question_id": "compute_iam"
+        },
+        {
+          "id": "lambda_2",
+          "dimension": "Network Security",
+          "title": "Unreviewed invocation and VPC exposure",
+          "description": "Public function URLs or unreviewed invocation and VPC paths can expose a function beyond its intended clients.",
+          "action": "Review function URL authentication and resource policies; restrict VPC security groups only when VPC attachment is needed.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC05 — Network protection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/network-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Network access controls (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.IR — Technology Infrastructure Resilience",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/lambda/latest/dg/urls-auth.html",
+          "source_question_id": "compute_network"
+        },
+        {
+          "id": "lambda_3",
+          "dimension": "Data Security",
+          "title": "Exposed runtime secrets or sensitive logs",
+          "description": "Secrets in code or environment configuration and sensitive log content can expose application credentials or data.",
+          "action": "Use an appropriate secrets service, review environment-variable encryption and access, and avoid logging sensitive values.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC08 / SEC09 — Protecting data at rest and in transit",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/data-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Data protection and encryption (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.DS — Data Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars-encryption.html",
+          "source_question_id": "compute_data"
+        },
+        {
+          "id": "lambda_4",
+          "dimension": "Monitoring",
+          "title": "Missing function execution visibility",
+          "description": "Missing logs, metrics, or alarms can leave errors and unexpected invocation patterns unnoticed.",
+          "action": "Grant only required logging permissions and configure CloudWatch logs, metrics, retention, and relevant alarms.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC04 — Detection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/detection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Logging and monitoring (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "DE.CM — Continuous Monitoring",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/lambda/latest/dg/monitoring-functions.html",
+          "source_question_id": "compute_monitoring"
+        },
+        {
+          "id": "lambda_5",
+          "dimension": "Configuration",
+          "title": "Unsupported runtime or unsuitable execution settings",
+          "description": "Outdated runtimes or unreviewed timeout, concurrency, and retry settings can cause insecure or unreliable execution.",
+          "action": "Use a supported runtime, verify execution limits, and review timeout, retry, concurrency, and deployment settings.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC01 — Secure operation and configuration",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/operate-your-workload-securely.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Secure configuration and review (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.PS — Platform Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html",
+          "source_question_id": "compute_configuration"
+        }
+      ]
+    },
+    "route53": {
+      "name": "Amazon Route 53",
+      "category": "network",
+      "any_yes": [
+        "network_domain"
+      ],
+      "reason": "Amazon Route 53 provides authoritative DNS management for the stated AWS-managed public domain requirement.",
+      "risks": [
+        {
+          "id": "route53_1",
+          "dimension": "Identity and Access Management",
+          "title": "Unauthorized DNS administration",
+          "description": "Broad hosted-zone or record change permissions can redirect website traffic.",
+          "action": "Restrict Route 53 change permissions to required hosted zones, actions, and administrators.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC03 — Permissions management",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/permissions-management.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Identity and access management (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.AA — Identity Management, Authentication, and Access Control",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/access-control-overview.html",
+          "source_question_id": "network_iam"
+        },
+        {
+          "id": "route53_2",
+          "dimension": "Network Security",
+          "title": "Unexpected or unowned DNS targets",
+          "description": "Records pointing at unintended or retired resources can redirect traffic or leave takeover opportunities.",
+          "action": "Verify DNS target ownership and intended public exposure and remove stale records when resources are retired.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC05 — Network protection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/network-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Network access controls (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.IR — Technology Infrastructure Resilience",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/best-practices-dns.html",
+          "source_question_id": "network_network"
+        },
+        {
+          "id": "route53_3",
+          "dimension": "Data Security",
+          "title": "Unreviewed DNS integrity protection",
+          "description": "An unreviewed DNSSEC configuration or sensitive values in records can undermine DNS integrity or expose information.",
+          "action": "Evaluate DNSSEC signing and delegation where appropriate; avoid credentials or private data in DNS records.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC08 / SEC09 — Protecting data at rest and in transit",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/data-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Data protection and encryption (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.DS — Data Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/domain-configure-dnssec.html",
+          "source_question_id": "network_data"
+        },
+        {
+          "id": "route53_4",
+          "dimension": "Monitoring",
+          "title": "Missing DNS query or change visibility",
+          "description": "Unavailable query logs and zone-change audit events can delay investigation of unexpected name resolution.",
+          "action": "Enable appropriate Route 53 query logging and review CloudTrail DNS administration events with suitable retention.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC04 — Detection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/detection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Logging and monitoring (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "DE.CM — Continuous Monitoring",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/monitoring-overview.html",
+          "source_question_id": "network_monitoring"
+        },
+        {
+          "id": "route53_5",
+          "dimension": "Configuration",
+          "title": "Stale or incorrect DNS records",
+          "description": "Incorrect aliases, TTLs, delegations, or leftover records can break delivery or reference decommissioned resources.",
+          "action": "Review hosted-zone delegation, aliases, target ownership, TTLs, and a decommissioning checklist before deployment.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC01 — Secure operation and configuration",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/operate-your-workload-securely.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Secure configuration and review (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.PS — Platform Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/best-practices-dns.html",
+          "source_question_id": "network_configuration"
+        }
+      ]
+    },
+    "cloudfront": {
+      "name": "Amazon CloudFront",
+      "category": "network",
+      "any_yes": [
+        "network_delivery",
+        "network_global_delivery"
+      ],
+      "reason": "Amazon CloudFront fits the stated controlled-edge, content delivery, or global caching requirement.",
+      "risks": [
+        {
+          "id": "cloudfront_1",
+          "dimension": "Identity and Access Management",
+          "title": "Unauthorized distribution changes",
+          "description": "Broad distribution-management permissions can change origins, certificates, or content delivery behavior.",
+          "action": "Restrict CloudFront administrative permissions and use reviewed change procedures for distributions and origins.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC03 — Permissions management",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/permissions-management.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Identity and access management (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.AA — Identity Management, Authentication, and Access Control",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/security-iam.html",
+          "source_question_id": "network_iam"
+        },
+        {
+          "id": "cloudfront_2",
+          "dimension": "Network Security",
+          "title": "Direct origin access bypasses the edge",
+          "description": "A publicly reachable origin can bypass the distribution’s intended access and delivery controls.",
+          "action": "Restrict origin access; use Origin Access Control for supported S3 origins and appropriate controls for custom origins.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC05 — Network protection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/network-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Network access controls (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.IR — Technology Infrastructure Resilience",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html",
+          "source_question_id": "network_network"
+        },
+        {
+          "id": "cloudfront_3",
+          "dimension": "Data Security",
+          "title": "Insecure transport or sensitive content caching",
+          "description": "Weak viewer or origin transport policies and inappropriate caching can expose data in transit or across users.",
+          "action": "Require suitable HTTPS viewer and origin policies and exclude private or personalized responses from shared caches as appropriate.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC08 / SEC09 — Protecting data at rest and in transit",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/data-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Data protection and encryption (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.DS — Data Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-https.html",
+          "source_question_id": "network_data"
+        },
+        {
+          "id": "cloudfront_4",
+          "dimension": "Monitoring",
+          "title": "Insufficient edge access visibility",
+          "description": "Missing access logs or change auditing can hide unusual requests or distribution modifications.",
+          "action": "Select appropriate standard or real-time logs, protect log destinations, and review CloudTrail changes and useful metrics.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC04 — Detection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/detection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Logging and monitoring (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "DE.CM — Continuous Monitoring",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/logging.html",
+          "source_question_id": "network_monitoring"
+        },
+        {
+          "id": "cloudfront_5",
+          "dimension": "Configuration",
+          "title": "Incorrect cache or certificate configuration",
+          "description": "Unreviewed cache keys, forwarding policies, origins, or certificates can cause data leakage or delivery failures.",
+          "action": "Review cache behaviors and cache keys, origins, alternate domains, and ACM certificate region requirements for CloudFront.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC01 — Secure operation and configuration",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/operate-your-workload-securely.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Secure configuration and review (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.PS — Platform Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/understanding-the-cache-key.html",
+          "source_question_id": "network_configuration"
+        }
+      ]
+    },
+    "iam": {
+      "name": "AWS IAM",
+      "category": "security",
+      "any_yes": [
+        "security_access"
+      ],
+      "reason": "AWS IAM provides identity, role, and permission management for the stated human or workload access requirement.",
+      "risks": [
+        {
+          "id": "iam_1",
+          "dimension": "Identity and Access Management",
+          "title": "Excessive privileges or weak human authentication",
+          "description": "Broad policies, weak human authentication, and shared administrator credentials can enable unauthorized AWS access.",
+          "action": "Prefer federation and temporary credentials, enforce appropriate MFA for humans, protect root access, and apply least privilege.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC03 — Permissions management",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/permissions-management.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Identity and access management (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.AA — Identity Management, Authentication, and Access Control",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html",
+          "source_question_id": "security_iam"
+        },
+        {
+          "id": "iam_2",
+          "dimension": "Network Security",
+          "title": "Overly broad trust and access context",
+          "description": "Unreviewed role trust and access conditions can permit unintended principals or administrative access paths.",
+          "action": "Review trusted principals, role assumptions, and appropriate source or organization conditions without creating brittle policy assumptions.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC05 — Network protection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/network-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Network access controls (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.IR — Technology Infrastructure Resilience",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition.html",
+          "source_question_id": "security_network"
+        },
+        {
+          "id": "iam_3",
+          "dimension": "Data Security",
+          "title": "Exposed long-lived credentials",
+          "description": "Unprotected access keys and broadly accessible secrets can expose AWS resources and stored information.",
+          "action": "Use temporary credentials where possible, remove unused keys, and protect and rotate unavoidable long-lived credentials.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC08 / SEC09 — Protecting data at rest and in transit",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/data-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Data protection and encryption (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.DS — Data Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/securing_access-keys.html",
+          "source_question_id": "security_data"
+        },
+        {
+          "id": "iam_4",
+          "dimension": "Monitoring",
+          "title": "Insufficient identity activity audit",
+          "description": "Missing audit coverage can conceal policy changes, unexpected role assumptions, or credential use.",
+          "action": "Record and review relevant CloudTrail identity and management events and alert on significant privilege changes.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC04 — Detection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/detection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Logging and monitoring (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "DE.CM — Continuous Monitoring",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/cloudtrail-integration.html",
+          "source_question_id": "security_monitoring"
+        },
+        {
+          "id": "iam_5",
+          "dimension": "Configuration",
+          "title": "Unreviewed IAM policy and role configuration",
+          "description": "Wildcard policies, stale roles, and unintended trust relationships can persist into deployment.",
+          "action": "Review permission and trust policies, validate them with available IAM tools, and remove unused identities and permissions.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC01 — Secure operation and configuration",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/operate-your-workload-securely.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Secure configuration and review (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.PS — Platform Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-policy-validation.html",
+          "source_question_id": "security_configuration"
+        }
+      ]
+    },
+    "acm": {
+      "name": "AWS Certificate Manager",
+      "category": "security",
+      "any_yes": [
+        "security_tls"
+      ],
+      "reason": "AWS Certificate Manager fits the stated need to manage HTTPS certificates for an integrated AWS endpoint; endpoint and certificate-region requirements must be verified.",
+      "risks": [
+        {
+          "id": "acm_1",
+          "dimension": "Identity and Access Management",
+          "title": "Unauthorized certificate administration",
+          "description": "Broad ACM permissions can permit unintended certificate requests, deletion, or changes affecting website TLS.",
+          "action": "Restrict certificate request, import, export, deletion, and tagging permissions to authorized roles and intended resources.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC03 — Permissions management",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/permissions-management.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Identity and access management (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.AA — Identity Management, Authentication, and Access Control",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/acm/latest/userguide/authen-overview.html",
+          "source_question_id": "security_iam"
+        },
+        {
+          "id": "acm_2",
+          "dimension": "Network Security",
+          "title": "Unreviewed certificate endpoint integration",
+          "description": "A certificate without correct endpoint integration does not establish the intended network transport boundary.",
+          "action": "Verify the supported integrated service, domain coverage, listener or distribution association, and relevant endpoint access controls.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC05 — Network protection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/network-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Network access controls (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.IR — Technology Infrastructure Resilience",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/acm/latest/userguide/acm-services.html",
+          "source_question_id": "security_network"
+        },
+        {
+          "id": "acm_3",
+          "dimension": "Data Security",
+          "title": "Unprotected certificate material or unsuitable TLS use",
+          "description": "Improper handling of imported or exportable private keys and unreviewed TLS integration can expose credentials or traffic.",
+          "action": "Prefer managed integrated use where appropriate, protect any private key material, and configure the endpoint to use suitable TLS policies.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC08 / SEC09 — Protecting data at rest and in transit",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/data-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Data protection and encryption (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.DS — Data Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/acm/latest/userguide/data-protection.html",
+          "source_question_id": "security_data"
+        },
+        {
+          "id": "acm_4",
+          "dimension": "Monitoring",
+          "title": "Unnoticed validation or renewal failures",
+          "description": "Without monitoring certificate state and renewal prerequisites, a website certificate can expire or fail validation.",
+          "action": "Monitor certificate status and expiration, retain required validation records, and investigate renewal or validation failures.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC04 — Detection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/detection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Logging and monitoring (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "DE.CM — Continuous Monitoring",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/acm/latest/userguide/monitoring-overview.html",
+          "source_question_id": "security_monitoring"
+        },
+        {
+          "id": "acm_5",
+          "dimension": "Configuration",
+          "title": "Incorrect region, validation, or lifecycle configuration",
+          "description": "Wrong certificate region, domain validation, or renewal prerequisites can prevent secure endpoint operation.",
+          "action": "Verify endpoint-specific region requirements, domain validation, certificate association, and managed-renewal eligibility.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC01 — Secure operation and configuration",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/operate-your-workload-securely.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Secure configuration and review (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.PS — Platform Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/acm/latest/userguide/managed-renewal.html",
+          "source_question_id": "security_configuration"
+        }
+      ]
+    },
+    "security_groups": {
+      "name": "Security Groups",
+      "category": "security",
+      "any_yes": [
+        "security_private_ingress"
+      ],
+      "reason": "Security Groups provide a stateful network boundary for the stated VPC-attached workload requirement.",
+      "risks": [
+        {
+          "id": "security_groups_1",
+          "dimension": "Identity and Access Management",
+          "title": "Unauthorized security group changes",
+          "description": "Broad permissions to modify security groups can reopen restricted network paths.",
+          "action": "Restrict security group creation and rule-change permissions and use authorized, reviewed administration roles.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC03 — Permissions management",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/permissions-management.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Identity and access management (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.AA — Identity Management, Authentication, and Access Control",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html",
+          "source_question_id": "security_iam"
+        },
+        {
+          "id": "security_groups_2",
+          "dimension": "Network Security",
+          "title": "Unnecessary inbound or outbound access",
+          "description": "Broad sources, destinations, ports, or protocols can expose VPC-attached resources to unintended traffic.",
+          "action": "Allow only required traffic; restrict administrative access, prefer appropriate security group references, and review egress needs.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC05 — Network protection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/network-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Network access controls (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.IR — Technology Infrastructure Resilience",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html",
+          "source_question_id": "security_network"
+        },
+        {
+          "id": "security_groups_3",
+          "dimension": "Data Security",
+          "title": "Assuming network rules encrypt application traffic",
+          "description": "Security Groups filter traffic but do not encrypt it or replace application authentication and secure protocols.",
+          "action": "Require suitable encrypted application protocols and authentication in addition to restricted security group traffic.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC08 / SEC09 — Protecting data at rest and in transit",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/data-protection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Data protection and encryption (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.DS — Data Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html",
+          "source_question_id": "security_data"
+        },
+        {
+          "id": "security_groups_4",
+          "dimension": "Monitoring",
+          "title": "Missing boundary-change and traffic visibility",
+          "description": "Unreviewed rule changes and traffic metadata can leave broad access or suspicious paths unnoticed.",
+          "action": "Review security group changes in CloudTrail and use appropriate VPC Flow Logs and alerts for relevant traffic patterns.",
+          "severity": "medium",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC04 — Detection",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/detection.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Logging and monitoring (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "DE.CM — Continuous Monitoring",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html",
+          "source_question_id": "security_monitoring"
+        },
+        {
+          "id": "security_groups_5",
+          "dimension": "Configuration",
+          "title": "Unused, stale, or default group rules",
+          "description": "Unreviewed default groups, obsolete rules, and stale references can retain access after design changes or decommissioning.",
+          "action": "Review attached groups, default rules, stale references, and unused rules before deployment and resource retirement.",
+          "severity": "high",
+          "frameworks": [
+            {
+              "framework": "AWS Well-Architected Framework Security Pillar",
+              "reference": "SEC01 — Secure operation and configuration",
+              "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/operate-your-workload-securely.html"
+            },
+            {
+              "framework": "CIS AWS Foundations Benchmark",
+              "reference": "Secure configuration and review (thematic; verify the adopted benchmark edition)",
+              "url": "https://www.cisecurity.org/benchmark/amazon_web_services"
+            },
+            {
+              "framework": "NIST Cybersecurity Framework 2.0",
+              "reference": "PR.PS — Platform Security",
+              "url": "https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf"
+            }
+          ],
+          "aws_doc_url": "https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html",
+          "source_question_id": "security_configuration"
+        }
+      ]
+    }
+  }
+}

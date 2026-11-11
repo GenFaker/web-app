@@ -1,0 +1,17 @@
+.venv/
+.runtime/
+work/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.sqlite3
+*.sqlite3-*
+*.db
+node_modules/
+build/
+dist/
