@@ -8,8 +8,8 @@ const graphNodePositions = new Map();
 let graphIgnoreClickUntil = 0;
 
 function initSecurityUI() {
-  let theme = 'dark';
-  try { theme = localStorage.getItem('aegis-theme') || 'dark'; } catch (_) { /* Optional preference storage. */ }
+  let theme = 'light';
+  try { theme = localStorage.getItem('aegis-theme') || 'light'; } catch (_) { /* Optional preference storage. */ }
   function applyTheme(value) {
     document.documentElement.dataset.theme = value;
     $('theme-toggle').textContent = value === 'dark' ? 'Light mode' : 'Dark mode';
@@ -117,8 +117,11 @@ function moveGraphNode(id, x, y) {
   const edge = [...document.querySelectorAll('[data-edge]')].find(edge => edge.dataset.edge === id);
   if (edge) { edge.setAttribute('x2', position.x); edge.setAttribute('y2', position.y); }
 }
-function zoomGraph(delta) { graphTransform.scale = Math.max(0.55, Math.min(1.6, graphTransform.scale + delta)); applyGraphTransform(); }
+function zoomGraph(delta) { graphTransform.scale = Math.max(0.8, Math.min(1.6, graphTransform.scale + delta)); applyGraphTransform(); }
 function applyGraphTransform() {
+  $('graph-zoom-out').disabled = graphTransform.scale <= 0.8;
+  $('graph-zoom-in').disabled = graphTransform.scale >= 1.6;
+  $('map-zoom-level').textContent = `Map ${Math.round(graphTransform.scale * 100)}%`;
   $('network-canvas').style.setProperty('--graph-zoom', graphTransform.scale);
   const centerOffset = ($('network-viewport').clientWidth - 840) / 2;
   $('network-canvas').style.transform = `translate(${centerOffset + graphTransform.x}px,${graphTransform.y}px) scale(${graphTransform.scale})`;
@@ -185,7 +188,7 @@ function renderSecurityGraph() {
   else { graphSelected = null; renderGraphMenu(); }
 }
 function renderGraphMenu() {
-  $('network-detail').innerHTML = `<div class="eyebrow">WORKSPACE NAVIGATION</div><h3>Investigate before deployment</h3><p>Explore a service node for its purpose, security findings, and official configuration guides.</p><div class="graph-menu">${[['dashboard','Security overview'],['library','Assessment library'],['planning','Remediation notes'],['methodology','How it works']].map(([view,label]) => `<button class="button button-secondary" data-view="${view}">${label}${icon('arrow-right')}</button>`).join('')}</div><p class="field-help">Red: control gaps · Amber: unresolved · Blue: reviewed in the advisory · Gray: reference or not selected. No status verifies an AWS configuration.</p>`;
+  $('network-detail').innerHTML = `<div class="eyebrow">WORKSPACE NAVIGATION</div><h3>Investigate before deployment</h3><p>Explore a service node for its purpose, security findings, and official configuration guides.</p><div class="graph-menu">${[['library','Assessment library'],['planning','Remediation notes']].map(([view,label]) => `<button class="button button-secondary" data-view="${view}">${label}${icon('arrow-right')}</button>`).join('')}</div><p class="field-help">Red: control gaps · Dashed outline: unresolved · Solid outline: reviewed in the advisory · Gray: reference or not selected. No status verifies an AWS configuration.</p>`;
 }
 function renderServiceDetail(id) {
   const metadata = state.kb.services.find(s => s.id === id);

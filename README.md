@@ -36,7 +36,7 @@ into that directory with both applications stopped; startup recovers unfiled rec
   of contained records. Assessments and advisory history are preserved during folder moves.
 - Assessment grid/list modes, sorting, read-only records, explicit editing, individual
   record moves, and confirmed record deletion.
-- Optional GPT, Claude, Gemini, Groq, and local Ollama narration. Provider credentials
+- Optional Claude and Groq narration, with a connection test in AI settings. Provider credentials
   remain in session memory, not persisted. The deterministic rule engine owns findings.
 
 This deliverable runs as a **single-user local web application**. Public hosting and
@@ -53,3 +53,24 @@ python -m pytest -q
 Browser checks require Chrome and an isolated test server. Set `AEGIS_WEB_DATA_DIR`
 to a temporary folder and start `python app.py --port 8767`; then run
 `python tests/web_browser.py`. Do not run write-oriented tests against personal data.
+
+## Claude and Groq diagnostics
+
+Claude and Groq are the only hosted integrations. Offline mode remains available
+for deterministic guidance and clearly labeled fallback; it is not an API provider.
+Defaults: `claude-sonnet-5-5` and Groq `qwen/qwen3.8-27b` (preview).
+You can override the model with an identifier available to your provider account.
+
+Open **AI settings**, select the provider, enter the API key, and click **Test
+connection**. This generates a small synthetic explanation to check authentication,
+model access, and output validation; usage charges may apply. Save the settings,
+then generate a new advisory. Existing saved snapshots remain unchanged.
+Authentication, quota, unavailable-model, timeout, and invalid-output failures are
+shown explicitly. A fallback result is labeled offline, never as successful AI output.
+Keys remain in session memory and survive in-app home navigation; refreshing or
+closing the page clears them. Do not put keys in source files or GitHub.
+
+Provider contract and persistence tests use mocked HTTP, not live credentials.
+Model lifecycle references:
+- https://console.groq.com/docs/deprecations
+- https://platform.claude.com/docs/en/about-claude/model-deprecations

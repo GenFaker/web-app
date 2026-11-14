@@ -32,12 +32,12 @@ const ICON_PATHS = {
 const $ = id => document.getElementById(id);
 const TOKEN = document.querySelector('meta[name=advisory-token]').content;
 const ANSWERS = [['yes', 'Yes'], ['no', 'No'], ['not_sure', 'Not sure'], ['not_applicable', 'Not applicable']];
-const COLORS = { planned: '#41b8ff', gap: '#f06c7a', unresolved: '#e6b54a', remaining: '#64748b' };
+const COLORS = { planned: '#777777', gap: '#b52029', unresolved: '#aaaaaa', remaining: '#dddddd' };
 const state = {
   kb: null, workspace: { folders: [], assessments: [] }, active: null,
   view: 'dashboard', folder: null, category: 0, report: null, reportId: null,
   dirty: false, editVersion: 0, navBusy: false, reloading: false, conflictAssessmentId: null,
-  settings: { provider: 'mock', api_key: '', model: '', ollama_url: 'http://127.0.0.1:11434' }
+  settings: { provider: 'mock', api_key: '', model: '' }
 };
 let saveTimer;
 let saveQueue = Promise.resolve();
@@ -241,11 +241,11 @@ async function flushSave() {
   if (state.dirty) await saveActive();
 }
 function setView(view) {
-  if (!['dashboard', 'library', 'planning', 'assessment', 'review', 'report', 'methodology'].includes(view)) return;
+  if (!['dashboard', 'library', 'planning', 'assessment', 'review', 'report'].includes(view)) return;
   state.view = view;
-  for (const name of ['dashboard', 'library', 'planning', 'assessment', 'review', 'report', 'methodology']) $(`${name}-view`).hidden = name !== view;
+  for (const name of ['dashboard', 'library', 'planning', 'assessment', 'review', 'report']) $(`${name}-view`).hidden = name !== view;
   document.querySelectorAll('nav [data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === view));
-  $('breadcrumb-title').textContent = { dashboard: 'Security overview', library: 'Assessment library', planning: 'Remediation notes', assessment: 'Edit assessment', review: 'Assessment record', report: 'Advisory report', methodology: 'How it works' }[view];
+  $('breadcrumb-title').textContent = { dashboard: 'Home', library: 'Assessment library', planning: 'Remediation notes', assessment: 'Edit assessment', review: 'Assessment record', report: 'Advisory report' }[view];
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 async function navigate(view) {
@@ -392,7 +392,7 @@ function updateProgress() {
 function renderHistory() {
   if (!state.active) return;
   const reports = state.active.reports || [];
-  $('report-history').innerHTML = reports.length ? reports.map((report, index) => `<button class="history-row" data-report-id="${esc(report.id)}"><span class="row-symbol">${icon('report')}</span><div><strong>Advisory snapshot ${reports.length - index}</strong><small>${esc(dateLabel(report.created_at))} · ${esc(report.provider_used || 'mock')} explanations</small><p>${esc(report.summary || 'Saved report snapshot')}</p></div><span>${icon('arrow-right')}</span></button>`).join('') : '<div class="panel-empty">No advisory versions yet. Complete the scoped questions and generate your first report.</div>';
+  $('report-history').innerHTML = reports.length ? reports.map((report, index) => `<button class="history-row" data-report-id="${esc(report.id)}"><span class="row-symbol">${icon('report')}</span><div><strong>Open advisory snapshot ${reports.length - index}</strong><small>${esc(dateLabel(report.created_at))} · ${esc(report.provider_used || 'mock')} explanations</small><p>${esc(report.summary || 'Saved report snapshot')}</p></div><span>${icon('arrow-right')}</span></button>`).join('') : '<div class="panel-empty">No advisory versions yet. Complete the scoped questions and generate your first report.</div>';
 
 }
 function changeCategory(index) {
@@ -409,6 +409,17 @@ function safeLink(value) {
   return '#';
 }
 function bulletList(items) { return `<ul>${items.map(item => `<li>${esc(item)}</li>`).join('')}</ul>`; }
+function reportOriginNotice(report) {
+  const remote = report.provider_used !== 'mock' && Object.keys(report.ai_explanations || {}).length > 0;
+  const provider = { claude: 'Claude', groq: 'Groq' }[report.provider_used] || report.provider_used;
+  return `<aside class="expert-review-notice" aria-label="Explanation source and expert review status">
+    <strong>Not reviewed by a cybersecurity expert</strong>
+    <p>${remote ? `${esc(provider)} API succeeded for this saved advisory. Its explanation text passed the application's format and basic content checks; these checks do not verify factual accuracy.` : 'This advisory uses offline explanations. No successful AI-generated explanation is included.'}</p>
+    <div class="explanation-roles"><p><b>Rule-based findings</b>Services, risks, actions, framework mappings, and AWS links come from the assessment rules.</p><p><b>${remote ? esc(provider) + ' explanations' : 'Offline explanations'}</b>${remote ? 'AI adds plain-language context beneath each service. It does not create or change the security findings.' : 'The application explains the rule-based findings without AI.'}</p></div>
+    <small>This is the application’s review notice, not text generated by AI. Expert review is still needed before relying on the guidance.</small>
+  </aside>`;
+}
+
 function renderReport() {
   const report = state.report;
   if (!report) return;
@@ -416,15 +427,16 @@ function renderReport() {
   const risks = report.recommendations.flatMap(service => service.risks);
   const concerns = [...report.unresolved, ...report.contradictions];
   const isChanged = state.active && (state.active.title !== report.title || JSON.stringify(state.active.answers) !== JSON.stringify(report.answers));
-  let html = `<section class="panel report-summary"><div class="eyebrow">${esc(report.id)} · SAVED SNAPSHOT</div><h2>${esc(report.title)}</h2><div class="report-meta">${esc(dateLabel(report.created_at))} · ${esc(scopeLabel(scope))} · Knowledge base ${esc(report.knowledge_base_version)}</div><p>${esc(report.summary)}</p><div class="report-notice">${esc(report.provider_notice)}</div>${isChanged ? '<div class="report-notice warning">This is a previous snapshot. Your current draft has different answers. Generate a new advisory to include those changes.</div>' : ''}<p class="field-help">${esc(report.review_status)}</p></section>`;
+  let html = `<section class="panel report-summary"><div class="eyebrow">${esc(report.id)} · SAVED SNAPSHOT</div><h2>${esc(report.title)}</h2><div class="report-meta">${esc(dateLabel(report.created_at))} · ${esc(scopeLabel(scope))} · Knowledge base ${esc(report.knowledge_base_version)}</div><p>${esc(report.summary)}</p>${reportOriginNotice(report)}${report.provider_used === 'mock' ? `<div class="report-notice">${esc(report.provider_notice)}</div>` : ''}${isChanged ? '<div class="report-notice warning">This is a previous snapshot. Your current draft has different answers. Generate a new advisory to include those changes.</div>' : ''}<p class="field-help">${esc(report.review_status)}</p></section>`;
   if (report.excluded_categories?.length) html += `<div class="scope-banner outside-scope"><span>${icon('info')}</span><div><strong>Outside this assessment</strong><p>${esc(report.excluded_categories.map(id => state.kb.categories.find(category => category.id === id)?.name || id).join(', '))}. These categories were not assessed and are excluded from all percentages.</p></div></div>`;
   if (concerns.length) html += `<section class="uncertainty-box"><h2>Clarify these requirements</h2>${bulletList(concerns)}</section>`;
   if (!report.recommendations.length) html += '<section class="uncertainty-box"><h2>No covered service selected</h2><p>Your stated requirements do not establish an applicable covered service. This does not establish a secure or deployable architecture.</p></section>';
+  html += '<div class="advisory-service-grid">';
   for (const service of report.recommendations) {
     const category = state.kb.categories.find(item => item.id === service.category);
-    html += `<article class="service-report panel"><div class="service-header"><span class="category-icon">${icon(category?.icon || 'cloud')}</span><div><div class="eyebrow">${esc(service.category)}</div><h2>${esc(service.name)}</h2><p>${esc(service.reason)}</p></div><span class="status-chip ${service.conditional ? 'conditional' : 'advisory'}">${service.conditional ? 'Conditional' : 'Applicable'}</span></div>${service.risks.map(risk => `<section class="risk-card"><div class="risk-topline"><div><span class="dimension-tag">${esc(risk.dimension)}</span><h3>${esc(risk.title)}</h3></div><div class="risk-badges"><span class="risk-badge ${esc(risk.status)}">${esc({ gap: 'Control gap', unresolved: 'Unresolved', planned: 'Planned · unverified', not_applicable: 'Not applicable' }[risk.status] || risk.status)}</span><span class="risk-badge">${esc(risk.severity)} advisory priority</span></div></div><p>${esc(risk.description)}</p><div class="risk-action"><strong>Recommended action</strong>${esc(risk.action)}</div><div class="risk-frameworks">${risk.frameworks.map(reference => `<a href="${safeLink(reference.url)}" target="_blank" rel="noopener noreferrer">${esc(reference.framework)} · ${esc(reference.reference)} ↗</a>`).join('')}</div><a class="aws-link" href="${safeLink(risk.aws_doc_url)}" target="_blank" rel="noopener noreferrer">Official AWS documentation ${icon('arrow-up-right')}</a></section>`).join('')}${report.ai_explanations[service.service_id] ? `<div class="ai-note"><strong>${report.provider_used === 'mock' ? 'OFFLINE EXPLANATION' : 'AI EXPLANATION · UNVERIFIED'}</strong>${esc(report.ai_explanations[service.service_id])}</div>` : ''}</article>`;
+    html += `<article class="service-report panel"><header class="service-header"><span class="category-icon">${icon(category?.icon || 'cloud')}</span><div><div class="eyebrow">${esc(service.category)}</div><h2>${esc(service.name)}</h2></div><span class="status-chip ${service.conditional ? 'conditional' : 'advisory'}">${service.conditional ? 'Conditional' : 'Applicable'}</span></header><div class="service-body"><p class="service-reason">${esc(service.reason)}</p><div class="risk-dimension-grid">${service.risks.map(risk => `<details class="risk-card"><summary class="risk-topline"><div><span class="dimension-tag">${esc(risk.dimension)}</span><h3>${esc(risk.title)}</h3></div><div class="risk-badges"><span class="risk-badge ${esc(risk.status)}">${esc({ gap: 'Control gap', unresolved: 'Unresolved', planned: 'Planned · unverified', not_applicable: 'Not applicable' }[risk.status] || risk.status)}</span><span class="risk-badge">${esc(risk.severity)} advisory priority</span></div><span class="risk-toggle" aria-hidden="true">+</span></summary><div class="risk-body"><p>${esc(risk.description)}</p><div class="risk-action"><strong>Recommended action</strong>${esc(risk.action)}</div><div class="risk-frameworks">${risk.frameworks.map(reference => `<a href="${safeLink(reference.url)}" target="_blank" rel="noopener noreferrer">${esc(reference.framework)} · ${esc(reference.reference)} ↗</a>`).join('')}</div><a class="aws-link" href="${safeLink(risk.aws_doc_url)}" target="_blank" rel="noopener noreferrer">Official AWS documentation ${icon('arrow-up-right')}</a></div></details>`).join('')}</div>${report.ai_explanations[service.service_id] ? `<div class="ai-note"><strong>${report.provider_used === 'mock' ? 'OFFLINE EXPLANATION' : 'AI EXPLANATION · NOT REVIEWED BY AN EXPERT'}</strong>${esc(report.ai_explanations[service.service_id])}</div>` : ''}</div></article>`;
   }
-  html += `<section class="limitations"><h2>Limitations and uncertainty</h2>${bulletList(report.limitations)}<p>These findings describe stated requirements. They do not verify security, compliance, or deployment readiness.</p></section>`;
+  html += `</div><details class="limitations"><summary><h2>Limitations and uncertainty</h2><span aria-hidden="true">+</span></summary><div class="risk-body">${bulletList(report.limitations)}<p>These findings describe stated requirements. They do not verify security, compliance, or deployment readiness.</p></div></details>`;
   $('report-content').innerHTML = html;
   $('export-md').disabled = !state.reportId;
   $('export-txt').disabled = !state.reportId;
@@ -561,46 +573,60 @@ async function createFolder(event) {
   } catch (error) { if ($('folder-dialog').open) dialogError('folder-dialog', error.message); else showError(error); } finally { $('folder-submit').disabled = false; }
 }
 function providerFields() {
+  $('provider-test-status').textContent = 'Not tested. Test a sample explanation before generating (provider usage charges may apply).';
   const provider = $('provider-select').value;
-  $('remote-settings').hidden = !['gemini', 'groq', 'openai', 'claude'].includes(provider);
+  $('remote-settings').hidden = !['groq', 'claude'].includes(provider);
   $('model-settings').hidden = provider === 'mock';
-  $('ollama-settings').hidden = provider !== 'ollama';
-  $('model-name').placeholder = { openai: 'gpt-4.1-mini', claude: 'claude-sonnet-4-5', gemini: 'gemini-2.5-flash', groq: 'llama-3.3-70b-versatile', ollama: 'llama3.2' }[provider] || '';
-  $('provider-privacy').innerHTML = icon(provider === 'mock' ? 'lock' : 'info') + esc({ openai: 'Selected service and risk facts are sent to OpenAI when you generate.', claude: 'Selected service and risk facts are sent to Anthropic when you generate.', mock: 'No data leaves your device in offline mode.', gemini: 'Selected service and risk facts are sent to Google when you generate.', groq: 'Selected service and risk facts are sent to Groq when you generate.', ollama: 'Selected facts are sent to your local Ollama server.' }[provider]);
+  $('model-name').placeholder = { claude: 'claude-sonnet-5-5', groq: 'qwen/qwen3.8-27b', }[provider] || '';
+  $('provider-privacy').innerHTML = icon(provider === 'mock' ? 'lock' : 'info') + esc({ claude: 'Selected service and risk facts are sent to Anthropic when you generate.', mock: 'No data leaves your device in offline mode.', groq: 'Selected service and risk facts are sent to Groq when you generate.', }[provider]);
 }
 function openSettings() {
   $('provider-select').value = state.settings.provider;
   $('api-key').value = state.settings.api_key;
   $('model-name').value = state.settings.model;
-  $('ollama-url').value = state.settings.ollama_url;
   providerFields();
   $('settings-dialog').showModal();
 }
 function providerSummary() {
   const provider = state.settings.provider;
-  $('provider-name').textContent = { openai: 'OpenAI GPT', claude: 'Anthropic Claude', mock: 'Offline mode', gemini: 'Google Gemini', groq: 'Groq', ollama: 'Local Ollama' }[provider];
+  $('provider-name').textContent = { claude: 'Anthropic Claude', mock: 'Offline mode', groq: 'Groq', }[provider];
   $('provider-description').textContent = provider === 'mock' ? 'Deterministic explanations' : 'Optional AI explanations';
-  $('privacy-copy').textContent = provider === 'mock' ? 'No data is sent to an AI service.' : provider === 'ollama' ? 'Explanations use your local model.' : 'Selected facts are sent when you generate.';
+  $('privacy-copy').textContent = provider === 'mock' ? 'No data is sent to an AI service.' : 'Selected facts are sent when you generate.';
 }
 function saveSettings(event) {
   event.preventDefault();
   const provider = $('provider-select').value;
   const model = $('model-name').value.trim();
   if (model && !/^[a-zA-Z0-9_.:/-]+$/.test(model)) { dialogError('settings-dialog', 'Use a valid model identifier.'); return; }
-  if (['gemini', 'groq', 'openai', 'claude'].includes(provider) && !$('api-key').value.trim()) { dialogError('settings-dialog', 'Enter an API key, or choose Offline mode.'); return; }
-  if (provider === 'ollama') {
-    try {
-      const url = new URL($('ollama-url').value);
-      if (url.protocol !== 'http:' || !['localhost', '127.0.0.1'].includes(url.hostname) || url.username || url.password || !['', '/'].includes(url.pathname) || url.search || url.hash) throw Error();
-    } catch { dialogError('settings-dialog', 'Use an HTTP loopback URL such as http://127.0.0.1:11434.'); return; }
-  }
-  state.settings = { provider, api_key: ['gemini', 'groq', 'openai', 'claude'].includes(provider) ? $('api-key').value.trim() : '', model: provider === 'mock' ? '' : model, ollama_url: $('ollama-url').value };
+  if (['groq', 'claude'].includes(provider) && !$('api-key').value.trim()) { dialogError('settings-dialog', 'Enter an API key, or choose Offline mode.'); return; }
+  state.settings = { provider, api_key: ['groq', 'claude'].includes(provider) ? $('api-key').value.trim() : '', model: provider === 'mock' ? '' : model };
   $('api-key').value = '';
   $('settings-dialog').close();
   providerSummary();
   toast('Provider saved for this session only.');
 }
+async function testProvider() {
+  const button = $('test-provider');
+  button.disabled = true;
+  $('provider-test-status').textContent = 'Testing authentication, model access, and explanation output…';
+  try {
+    const result = await jsonApi('/api/providers/test', { method: 'POST', body: JSON.stringify({
+      provider: $('provider-select').value, api_key: $('api-key').value.trim(), model: $('model-name').value.trim()
+    }) });
+    $('provider-test-status').textContent = `${result.ok ? 'Connection verified' : 'Connection failed'} · ${result.model}. ${result.message}`;
+  } catch (error) { $('provider-test-status').textContent = error.message; }
+  finally { button.disabled = false; }
+}
 function bindEvents() {
+  $('reading-size').addEventListener('change', () => {
+    document.documentElement.style.setProperty('--reading-scale', $('reading-size').value);
+  });
+  $('editor-snapshots').addEventListener('click', async () => {
+    try { await flushSave(); renderAssessmentReview(); setView('review'); $('report-history').closest('section').scrollIntoView({block:'start'}); }
+    catch (error) { showError(error); }
+  });
+  $('test-provider').addEventListener('click', testProvider);
+  ['api-key', 'model-name'].forEach(id => $(id).addEventListener('input', () => { $('provider-test-status').textContent = 'Settings changed. Test again to verify.'; }));
   document.addEventListener('click', async event => {
     if (event.target.closest('#reload-saved')) { await reloadSavedAssessment(); return; }
     const create = event.target.closest('.create-trigger');
@@ -608,7 +634,7 @@ function bindEvents() {
     const close = event.target.closest('[data-close]');
     if (close) { if (close.dataset.close === 'settings-dialog') $('api-key').value = ''; $(close.dataset.close).close(); return; }
     const view = event.target.closest('[data-view]');
-    if (view) { await navigate(view.dataset.view); return; }
+    if (view) { event.preventDefault(); await navigate(view.dataset.view); return; }
     const open = event.target.closest('[data-open-assessment]');
     if (open) { await openAssessment(open.dataset.openAssessment); return; }
     const folder = event.target.closest('[data-folder-id]');
@@ -663,7 +689,6 @@ async function init() {
   bindEvents();
   try {
     state.kb = await jsonApi('/api/knowledge');
-    $('kb-version').textContent = `Knowledge base ${state.kb.version} · ${state.kb.review_status}`;
     await loadWorkspace();
     providerSummary();
     renderAssessment();

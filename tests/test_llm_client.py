@@ -8,8 +8,8 @@ import httpx
 
 from models.domain import Answer, AssessmentResult, ProviderSettings, ServiceRecommendation
 from services.llm_client import (
-    GeminiProvider, GroqProvider, LLMProvider, MAX_RESPONSE_BYTES, MockProvider,
-    OllamaProvider, ProviderError, create_provider, enrich_report, validate_ollama_url,
+    ClaudeProvider, GroqProvider, LLMProvider, MAX_RESPONSE_BYTES, MockProvider,
+    ProviderError, create_provider, enrich_report,
 )
 
 
@@ -33,8 +33,8 @@ def groq_response(explanations: object = None) -> dict:
 
 
 class ProviderTests(unittest.IsolatedAsyncioTestCase):
-    async def test_gpt_and_claude_contracts(self) -> None:
-        for provider in ("openai", "claude"):
+    async def test_claude_contract(self) -> None:
+        for provider in ("claude",):
             with self.subTest(provider=provider):
                 def handler(request: httpx.Request) -> httpx.Response:
                     body = json.loads(request.content)
@@ -43,13 +43,9 @@ class ProviderTests(unittest.IsolatedAsyncioTestCase):
                     self.assertNotIn("top-secret", request.content.decode())
                     self.assertEqual(body["model"], "custom-model")
                     output = json.dumps({"explanations": {"s3": TEXT}})
-                    if provider == "openai":
-                        self.assertEqual(str(request.url), "https://api.openai.com/v1/responses")
-                        self.assertEqual(request.headers["authorization"], "Bearer top-secret")
-                        self.assertFalse(body["store"])
-                        return httpx.Response(200, json={"status": "completed", "output": [{"type": "message", "content": [{"type": "output_text", "text": output}]}]})
                     self.assertEqual(str(request.url), "https://api.anthropic.com/v1/messages")
                     self.assertEqual(request.headers["x-api-key"], "top-secret")
+                    self.assertEqual(body["output_config"]["format"]["schema"]["properties"]["explanations"]["required"], ["s3"])
                     self.assertEqual(request.headers["anthropic-version"], "2023-06-01")
                     return httpx.Response(200, json={"stop_reason": "end_turn", "content": [{"type": "text", "text": output}]})
                 async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
@@ -58,7 +54,7 @@ class ProviderTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(result.ai_explanations, {"s3": TEXT})
 
     async def test_new_provider_failures_preserve_rule_results(self) -> None:
-        for provider in ("openai", "claude"):
+        for provider in ("claude",):
             for payload in ({}, {"status": "incomplete", "stop_reason": "max_tokens"}, {"status": "completed", "stop_reason": "end_turn", "content": [{"type": "text", "text": "not JSON"}]}):
                 async with httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(200, json=payload))) as client:
                     original = report()
@@ -92,7 +88,7 @@ class ProviderTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(str(request.url), "https://api.groq.com/openai/v1/chat/completions")
             self.assertEqual(request.headers["Authorization"], "Bearer top-secret")
             body = json.loads(request.content)
-            self.assertEqual(body["model"], "llama-3.3-70b-versatile")
+            self.assertEqual(body["model"], "qwen/qwen3.8-27b")
             self.assertEqual(body["response_format"], {"type": "json_object"})
             self.assertNotIn("Confidential project name", request.content.decode())
             self.assertNotIn("sensitive_raw_answer", request.content.decode())
@@ -105,35 +101,12 @@ class ProviderTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("unverified", result.provider_notice)
         self.assertNotIn("top-secret", result.model_dump_json())
 
-    async def test_gemini_header_json_mode_and_override(self) -> None:
-        def handler(request: httpx.Request) -> httpx.Response:
-            self.assertEqual(str(request.url), "https://generativelanguage.googleapis.com/v1beta/models/custom-model:generateContent")
-            self.assertEqual(request.headers["x-goog-api-key"], "test-key")
-            self.assertEqual(request.url.query, b"")
-            self.assertEqual(json.loads(request.content)["generationConfig"]["responseMimeType"], "application/json")
-            return httpx.Response(200, json={"candidates": [{"finishReason": "STOP", "content": {"parts": [{"text": json.dumps({"explanations": {"s3": TEXT}})}]}}]})
-        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-            result = await enrich_report(report(), ProviderSettings(provider="gemini", api_key="test-key", model="custom-model"), client)
-        self.assertEqual(result.provider_used, "gemini")
-
-    async def test_ollama_loopback_canonical_no_stream(self) -> None:
-        def handler(request: httpx.Request) -> httpx.Response:
-            self.assertEqual(str(request.url), "http://127.0.0.1:11434/api/chat")
-            body = json.loads(request.content)
-            self.assertFalse(body["stream"])
-            self.assertEqual(body["format"], "json")
-            self.assertNotIn("authorization", request.headers)
-            return httpx.Response(200, json={"done": True, "message": {"content": json.dumps({"explanations": {"s3": TEXT}})}})
-        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-            result = await enrich_report(report(), ProviderSettings(provider="ollama", ollama_url="http://localhost:11434/"), client)
-        self.assertEqual(result.provider_used, "ollama")
-
     async def test_missing_key_does_not_call_network(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             self.fail("A missing key must fail before making a request")
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-            result = await enrich_report(report(), ProviderSettings(provider="gemini"), client)
-        self.assertEqual(result.provider_requested, "gemini")
+            result = await enrich_report(report(), ProviderSettings(provider="groq"), client)
+        self.assertEqual(result.provider_requested, "groq")
         self.assertEqual(result.provider_used, "mock")
         self.assertIn("unavailable or failed validation", result.provider_notice)
 
@@ -211,25 +184,31 @@ class ProviderTests(unittest.IsolatedAsyncioTestCase):
             calls.append(str(request.url))
             return httpx.Response(302, headers={"Location": "http://10.0.0.1/private"})
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler), follow_redirects=True) as client:
-            result = await enrich_report(report(), ProviderSettings(provider="ollama"), client)
+            result = await enrich_report(report(), ProviderSettings(provider="groq", api_key="secret"), client)
         self.assertEqual(len(calls), 1)
         self.assertEqual(result.provider_used, "mock")
 
-    def test_ollama_remote_or_ambiguous_addresses_rejected(self) -> None:
-        bad_urls = [
-            "http://10.0.0.1:11434", "http://169.254.169.254", "https://localhost:11434",
-            "http://localhost.evil.test", "http://user:pass@localhost:11434",
-            "http://127.0.0.1:11434/api", "http://127.0.0.1:11434?token=key",
-            "http://127.0.0.1:11434/#fragment", "http://[::1]:11434",
-            "http://localhost:99999", "file:///tmp/socket", "http://2130706433:11434",
-        ]
-        for url in bad_urls:
-            with self.subTest(url=url), self.assertRaises(ProviderError):
-                validate_ollama_url(url)
-        self.assertEqual(validate_ollama_url("http://localhost:12345"), "http://127.0.0.1:12345")
+    async def test_key_whitespace_and_actionable_errors(self):
+        for provider in ("claude", "groq"):
+            for status, message in ((401, "authentication"), (429, "quota"), (404, "model"), (413, "scope")):
+                def handler(request):
+                    key = request.headers.get("x-api-key") or request.headers.get("authorization")
+                    self.assertIn("secret", key)
+                    self.assertNotIn("\n", key)
+                    return httpx.Response(status, text="DO-NOT-EXPOSE")
+                async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+                    result = await enrich_report(report(), ProviderSettings(provider=provider, api_key=" secret\n"), client)
+                self.assertIn(message, result.provider_notice)
+                self.assertNotIn("DO-NOT-EXPOSE", result.model_dump_json())
+
+    def test_removed_providers_are_rejected(self):
+        from pydantic import ValidationError
+        for provider in ("openai", "gemini", "ollama"):
+            with self.assertRaises(ValidationError):
+                ProviderSettings(provider=provider)
 
     def test_factory_implements_strategy_interface(self) -> None:
-        for name, provider_type in (("mock", MockProvider), ("gemini", GeminiProvider), ("groq", GroqProvider), ("ollama", OllamaProvider)):
+        for name, provider_type in (("mock", MockProvider), ("claude", ClaudeProvider), ("groq", GroqProvider)):
             provider = create_provider(ProviderSettings(provider=name))
             self.assertIsInstance(provider, provider_type)
             self.assertIsInstance(provider, LLMProvider)

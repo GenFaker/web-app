@@ -21,10 +21,10 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
-from models.domain import AssessmentRequest, AssessmentResult, AssessmentScope
+from models.domain import AssessmentRequest, AssessmentResult, AssessmentScope, ProviderSettings, ServiceRecommendation
 from models.workspace import AssessmentCreate, AssessmentUpdate, FolderCreate, FolderRename, FolderRemoval, AssessmentMove
 from services.evaluator import KnowledgeBase, RuleEvaluator
-from services.llm_client import enrich_report
+from services.llm_client import enrich_report, DEFAULT_MODELS
 from services.report import AdvisoryReport
 from services.storage import (
     PersistentWorkspace, StorageConflict, StorageError, StorageNotFound,
@@ -215,6 +215,18 @@ def create_app(data_directory: Path | None = None) -> FastAPI:
         if not workspace.delete_assessment(assessment_id, revision):
             raise HTTPException(status_code=404, detail="Assessment not found.")
         return {"deleted": True}
+
+    @app.post("/api/providers/test")
+    async def test_provider(settings: ProviderSettings) -> dict:
+        sample = AssessmentResult(id="connection-test", title="Connection test",
+            knowledge_base_version="test", answers={}, summary="Synthetic test only",
+            recommendations=[ServiceRecommendation(service_id="s3", name="Amazon S3",
+                category="storage", reason="Website files require object storage.")])
+        async with generation_lock:
+            result = await enrich_report(sample, settings)
+        return {"ok": result.provider_used == settings.provider,
+                "provider": settings.provider, "model": settings.model or DEFAULT_MODELS[settings.provider],
+                "message": result.provider_notice}
 
     @app.post("/api/evaluate")
     async def evaluate(payload: AssessmentRequest) -> dict:

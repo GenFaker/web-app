@@ -74,9 +74,8 @@ with sync_playwright() as engine:
             page.set_viewport_size({'width':width,'height':1100})
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
             assert page.locator('.dimension-heading h3').first.evaluate('e=>parseFloat(getComputedStyle(e).fontSize)') >= 22
-            cards = page.locator('.dimension-card').all()
-            first,second = cards[0].bounding_box(),cards[1].bounding_box()
-            assert second['y']-(first['y']+first['height']) >= 19
+            gap = page.locator('.dimension-card').evaluate_all('(cards) => { const a=cards[0].getBoundingClientRect(), b=cards[1].getBoundingClientRect(); return b.top-a.bottom; }')
+            assert gap >= 19, (theme, width, gap)
             page.screenshot(path=f'work/browser-checks/ballan-assessment-{theme}-{width}.png',full_page=True)
     assert not errors,errors
     browser.close()

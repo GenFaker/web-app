@@ -75,10 +75,9 @@ class AssessmentResult(DomainModel):
     excluded_categories: list[str] = Field(default_factory=list)
 
 class ProviderSettings(DomainModel):
-    provider: Literal["mock", "gemini", "groq", "ollama", "openai", "claude"] = "mock"
+    provider: Literal["mock", "groq", "claude"] = "mock"
     api_key: str = Field(default="", max_length=512, repr=False)
     model: str = Field(default="", max_length=120, pattern=r"^[a-zA-Z0-9_.:/-]*$")
-    ollama_url: str = Field(default="http://127.0.0.1:11434", max_length=200)
 
 class AssessmentRequest(DomainModel):
     title: str = Field(default="Untitled website", min_length=1, max_length=100)

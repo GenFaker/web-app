@@ -12,7 +12,6 @@ import json
 import re
 from abc import ABC, abstractmethod
 from typing import Any
-from urllib.parse import urlsplit
 
 import httpx
 
@@ -23,14 +22,7 @@ class ProviderError(Exception):
     """A safe, user-facing provider failure without response text or credentials."""
 
 
-DEFAULT_MODELS: dict[str, str] = {
-    "openai": "gpt-4.1-mini",
-    "claude": "claude-sonnet-4-5",
-    "gemini": "gemini-2.5-flash",
-    "groq": "llama-3.3-70b-versatile",
-    "ollama": "llama3.2",
-    "mock": "offline",
-}
+DEFAULT_MODELS: dict[str, str] = {"claude": "claude-sonnet-5-5", "groq": "qwen/qwen3.8-27b", "mock": "offline"}
 MAX_RESPONSE_BYTES = 96 * 1024
 MAX_EXPLANATION_LENGTH = 1800
 _SYSTEM_PROMPT = """You explain an existing pre-deployment AWS advisory for a university project.
@@ -45,6 +37,13 @@ Return ONLY a JSON object with this exact structure:
 {"explanations": {"supplied_service_id": "One concise plain-text paragraph."}}
 Include exactly the supplied service IDs. No HTML, Markdown, or additional keys.
 """
+
+
+def explanation_schema(result: AssessmentResult) -> dict:
+    entries = {service.service_id: {"type": "string"} for service in result.recommendations}
+    return {"type": "object", "properties": {"explanations": {"type": "object",
+            "properties": entries, "required": list(entries), "additionalProperties": False}},
+            "required": ["explanations"], "additionalProperties": False}
 
 
 def _facts(result: AssessmentResult) -> str:
@@ -104,28 +103,6 @@ def _validate_explanations(payload: Any, result: AssessmentResult) -> dict[str, 
     return validated
 
 
-def validate_ollama_url(value: str) -> str:
-    """Accept only literal HTTP loopback hosts with no credentials or URL extras."""
-    try:
-        parsed = urlsplit(value)
-        port = parsed.port
-    except ValueError as exc:
-        raise ProviderError("Ollama address must be an HTTP loopback URL with a valid port.") from exc
-    if (
-        parsed.scheme != "http"
-        or parsed.hostname not in {"localhost", "127.0.0.1"}
-        or parsed.username is not None
-        or parsed.password is not None
-        or parsed.path not in {"", "/"}
-        or parsed.query
-        or parsed.fragment
-        or (port is not None and not 1 <= port <= 65535)
-    ):
-        raise ProviderError("Ollama is restricted to http://localhost or http://127.0.0.1 with an optional port.")
-    # Canonicalization avoids alternate hostname spelling and URL interpretation.
-    return f"http://127.0.0.1:{port or 80}"
-
-
 class LLMProvider(ABC):
     """Strategy interface for optional, supplemental narrative generation."""
 
@@ -163,13 +140,13 @@ class _HTTPProvider(LLMProvider):
     async def _post(self, url: str, headers: dict[str, str], body: dict[str, Any]) -> Any:
         """Read at most 96 KiB and avoid redirects, retry loops, and raw error text."""
         try:
-            async with asyncio.timeout(30):
+            async with asyncio.timeout(50):
                 if self._client is not None:
                     return await self._read(self._client, url, headers, body)
                 async with httpx.AsyncClient(
-                    timeout=httpx.Timeout(25.0, connect=5.0),
+                    timeout=httpx.Timeout(45.0, connect=5.0),
                     follow_redirects=False,
-                    trust_env=self.provider_name != "ollama",
+                    trust_env=True,
                 ) as client:
                     return await self._read(client, url, headers, body)
         except TimeoutError as exc:
@@ -179,10 +156,14 @@ class _HTTPProvider(LLMProvider):
         try:
             async with client.stream(
                 "POST", url, headers=headers, json=body,
-                timeout=httpx.Timeout(25.0, connect=5.0), follow_redirects=False,
+                timeout=httpx.Timeout(45.0, connect=5.0), follow_redirects=False,
             ) as response:
                 if response.status_code in {401, 403}:
                     raise ProviderError("The AI provider rejected authentication or access.")
+                if response.status_code in {400, 404, 422}:
+                    raise ProviderError("The provider rejected the model or request. Check model availability and API credits in the provider console.")
+                if response.status_code == 413:
+                    raise ProviderError("The assessment exceeds the provider request limit. Try a smaller assessment scope.")
                 if response.status_code == 429:
                     raise ProviderError("The AI provider rate or quota limit was reached.")
                 if not 200 <= response.status_code < 300:
@@ -212,36 +193,8 @@ class _HTTPProvider(LLMProvider):
     def _require_key(self) -> None:
         if not self.settings.api_key.strip():
             raise ProviderError("An API key is required for the selected AI provider.")
-
-
-class GeminiProvider(_HTTPProvider):
-    """Google Gemini REST strategy using the API key header and JSON output."""
-
-    provider_name = "gemini"
-
-    async def generate(self, result: AssessmentResult) -> dict[str, str]:
-        if not result.recommendations:
-            return {}
-        self._require_key()
-        if not re.fullmatch(r"[a-zA-Z0-9_.-]+", self.model):
-            raise ProviderError("Gemini model name contains unsupported characters.")
-        payload = await self._post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent",
-            {"x-goog-api-key": self.settings.api_key, "Content-Type": "application/json"},
-            {
-                "systemInstruction": {"parts": [{"text": _SYSTEM_PROMPT}]},
-                "contents": [{"role": "user", "parts": [{"text": _facts(result)}]}],
-                "generationConfig": {"temperature": 0.2, "maxOutputTokens": 4096, "responseMimeType": "application/json"},
-            },
-        )
-        try:
-            candidate = payload["candidates"][0]
-            if candidate.get("finishReason", "STOP") != "STOP":
-                raise ProviderError("Gemini did not finish a complete explanation.")
-            content = "".join(part["text"] for part in candidate["content"]["parts"] if "text" in part)
-        except (KeyError, IndexError, TypeError) as exc:
-            raise ProviderError("Gemini returned no usable explanation.") from exc
-        return self._validate_content(content, result)
+        if any(ord(c) < 33 or ord(c) > 126 for c in self.settings.api_key.strip()):
+            raise ProviderError("The API key contains invalid characters. Paste the key without spaces or line breaks.")
 
 
 class GroqProvider(_HTTPProvider):
@@ -255,12 +208,12 @@ class GroqProvider(_HTTPProvider):
         self._require_key()
         payload = await self._post(
             "https://api.groq.com/openai/v1/chat/completions",
-            {"Authorization": f"Bearer {self.settings.api_key}", "Content-Type": "application/json"},
+            {"Authorization": f"Bearer {self.settings.api_key.strip()}", "Content-Type": "application/json"},
             {
                 "model": self.model,
                 "messages": [{"role": "system", "content": _SYSTEM_PROMPT}, {"role": "user", "content": _facts(result)}],
                 "temperature": 0.2,
-                "max_tokens": 4096,
+                "max_completion_tokens": 8192,
                 "response_format": {"type": "json_object"},
             },
         )
@@ -271,30 +224,6 @@ class GroqProvider(_HTTPProvider):
             content = choice["message"]["content"]
         except (KeyError, IndexError, TypeError) as exc:
             raise ProviderError("Groq returned no usable explanation.") from exc
-        return self._validate_content(content, result)
-
-
-class OpenAIProvider(_HTTPProvider):
-    """GPT narration through the official Responses API, without response storage."""
-
-    provider_name = "openai"
-
-    async def generate(self, result: AssessmentResult) -> dict[str, str]:
-        if not result.recommendations:
-            return {}
-        self._require_key()
-        payload = await self._post(
-            "https://api.openai.com/v1/responses",
-            {"Authorization": f"Bearer {self.settings.api_key}", "Content-Type": "application/json"},
-            {"model": self.model, "instructions": _SYSTEM_PROMPT, "input": _facts(result),
-             "store": False, "max_output_tokens": 4096,
-             "text": {"format": {"type": "json_object"}}},
-        )
-        if payload.get("status") != "completed":
-            raise ProviderError("GPT did not finish a complete explanation.")
-        content = "".join(part.get("text", "") for item in payload.get("output", [])
-                          if item.get("type") == "message" for part in item.get("content", [])
-                          if part.get("type") == "output_text")
         return self._validate_content(content, result)
 
 
@@ -309,9 +238,10 @@ class ClaudeProvider(_HTTPProvider):
         self._require_key()
         payload = await self._post(
             "https://api.anthropic.com/v1/messages",
-            {"x-api-key": self.settings.api_key, "anthropic-version": "2023-06-01",
+            {"x-api-key": self.settings.api_key.strip(), "anthropic-version": "2023-06-01",
              "Content-Type": "application/json"},
-            {"model": self.model, "system": _SYSTEM_PROMPT, "max_tokens": 4096,
+            {"model": self.model, "system": _SYSTEM_PROMPT, "max_tokens": 8192,
+             "output_config": {"format": {"type": "json_schema", "schema": explanation_schema(result)}},
              "messages": [{"role": "user", "content": _facts(result)}]},
         )
         if payload.get("stop_reason") != "end_turn":
@@ -321,41 +251,9 @@ class ClaudeProvider(_HTTPProvider):
         return self._validate_content(content, result)
 
 
-class OllamaProvider(_HTTPProvider):
-    """Local Ollama strategy restricted to an HTTP loopback server."""
-
-    provider_name = "ollama"
-
-    async def generate(self, result: AssessmentResult) -> dict[str, str]:
-        if not result.recommendations:
-            return {}
-        base_url = validate_ollama_url(self.settings.ollama_url)
-        payload = await self._post(
-            f"{base_url}/api/chat",
-            {"Content-Type": "application/json"},
-            {
-                "model": self.model,
-                "messages": [{"role": "system", "content": _SYSTEM_PROMPT}, {"role": "user", "content": _facts(result)}],
-                "stream": False,
-                "format": "json",
-                "options": {"temperature": 0.2, "num_predict": 4096},
-            },
-        )
-        try:
-            if payload.get("done") is not True:
-                raise ProviderError("Ollama did not finish a complete explanation.")
-            content = payload["message"]["content"]
-        except (KeyError, TypeError, AttributeError) as exc:
-            raise ProviderError("Ollama returned no usable explanation.") from exc
-        return self._validate_content(content, result)
-
-
 def create_provider(settings: ProviderSettings, client: httpx.AsyncClient | None = None) -> LLMProvider:
     """Construct the configured strategy; injected clients remain caller-owned."""
-    providers: dict[str, type[_HTTPProvider]] = {
-        "openai": OpenAIProvider, "claude": ClaudeProvider,
-        "gemini": GeminiProvider, "groq": GroqProvider, "ollama": OllamaProvider,
-    }
+    providers: dict[str, type[_HTTPProvider]] = {"claude": ClaudeProvider, "groq": GroqProvider}
     if settings.provider == "mock":
         return MockProvider()
     return providers[settings.provider](settings, client)
@@ -384,9 +282,9 @@ async def enrich_report(
         enriched.provider_notice = (
             "Offline explanations. No information sent to an AI service."
             if settings.provider == "mock"
-            else f"Supplemental {settings.provider.title()} AI text is unverified. Service choices, risks, actions, mappings, and links remain fixed by the rule engine."
+            else f"{settings.provider.title()} API succeeded. AI explanations are unverified by a cybersecurity expert. Format and basic content checks passed, but factual accuracy has not been verified. The rule engine determines services, risks, actions, mappings, and links; AI only explains these findings."
         )
-    except (ProviderError, httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
+    except (ProviderError, httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError) as error:
         # Do not expose raw exceptions: third-party messages may contain keys,
         # endpoint details, or generated content. Every failure is transparent.
         enriched.ai_explanations = await MockProvider().generate(result)
@@ -394,6 +292,6 @@ async def enrich_report(
         enriched.provider_notice = (
             f"{settings.provider.title()} explanations were unavailable or failed validation. "
             "Offline explanations were used; rule-based recommendations are unchanged. "
-            "Check the provider key, model, connection, and quota in settings."
+            + (str(error) if isinstance(error, ProviderError) else "The provider returned an invalid response. Test the connection in AI settings.")
         )
     return enriched
